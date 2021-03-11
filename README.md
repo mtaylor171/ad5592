@@ -31,11 +31,11 @@ To run this use the following:
 The terminal will ask you the following:
 
 
-*Enter Filename:*
+***Enter Filename:***
 
-*Enter # Channels:*
+***Enter # Channels:***
 
-*Enter display code (n = normal data; r = rising edges; f = frequency; code = c:*
+***Enter display code (n = normal data; r = rising edges; f = frequency; code = c:***
 
 
 
