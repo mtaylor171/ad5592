@@ -259,7 +259,6 @@ int main(){
 	return 0;
 }
  
-//#include "AD5592RPI.h"
 
 long int elapsed_time(){
 	long int elapsed = ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec);
