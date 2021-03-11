@@ -231,7 +231,7 @@ int main(){
 	time_t timeStamp;
 	time(&timeStamp);
 	filePointer = fopen(ctime(&timeStamp), "w");
-	fprintf(filePointer, "Time 0 [us], Signal 0 [mV], Time 1 [us], Signal 1 [mV], Time 2 [us], Signal 2 [mV], Time 3 [us], Signal 3 [mV], Time 4 [us], Signal 4 [mV], Time 5 [us], Signal 5 [mV], Time 6 [us], Signal 6 [mV], Time 7 [us], Signal 7 [mV]\n");
+	fprintf(filePointer, "Time [us], Signal 0 [mV], Signal 1 [mV], Signal 2 [mV], Signal 3 [mV], Signal 4 [mV], Signal 5 [mV], Signal 6 [mV], Signal 7 [mV]\n");
 	
 	delay(5);
 	
