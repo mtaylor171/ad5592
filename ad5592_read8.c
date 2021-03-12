@@ -242,11 +242,8 @@ int main(){
 		for(int i = 0; i < ACTIVE_CHANNELS; i++){
 			data[i] = getAnalogIn(i);
 			bcm2835_delay(.1);
-			gettimeofday(&et, NULL);
-			printf("%ld \n", elapsed_time());
 		}
-		//gettimeofday(&et, NULL);
-		//printf("%ld \n", elapsed_time());
+		gettimeofday(&et, NULL);
 		fprintf(filePointer, "%d", elapsed_time());
 		for(int j = 0; j < ACTIVE_CHANNELS; j ++){
 			fprintf(filePointer, ",%u", data[j]);
