@@ -200,6 +200,7 @@ void AD5592_Init();
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
+#include <string.h>
 
 #define ACTIVE_CHANNELS 8
 
@@ -216,14 +217,15 @@ int main(){
 	AD5592_Init();
 	setAD5592Ch(0);
 	spiComs(AD5592_SW_RESET);
+	bcm2835_delay(LONG_DELAY);
+	spiComs(0x5A00);	//Enable Internal reference
+	bcm2835_delay(1);
 	
-	setAsPULLDOWN(AD5592_IO1);
-	setAsPULLDOWN(AD5592_IO2);
-	setAsPULLDOWN(AD5592_IO3);
-	setAsPULLDOWN(AD5592_IO4);
-	setAsPULLDOWN(AD5592_IO5);
-	setAsPULLDOWN(AD5592_IO6);
-	setAsPULLDOWN(AD5592_IO7);
+	//spiComs(0x1B00);	//ADC Buffer enabled, Precharge enabled
+	//spiComs(0x1900);	//ADC Buffer enabled
+	spiComs(0x1A20);	//Precharge enabled, ADC gain 0-2Vref
+	bcm2835_delay(1);
+	
 	
 	uint16_t data[8] = {0};
 	int us = 0;
@@ -270,7 +272,7 @@ long int elapsed_time(){
 void clearBuffer(char spiBuffer[])
 {
 	int i;
-	for(i=0;i<sizeof(spiBuffer);i++)
+	for(i=0;i<strlen(spiBuffer);i++)
 	{
 		spiBuffer[i] = 0x00;
 	}

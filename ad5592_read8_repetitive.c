@@ -219,19 +219,25 @@ int main(){
 	spiComs(AD5592_SW_RESET);
 	bcm2835_delay(100);
 	
-	spiComs(AD5592_PULL_DOWN_SET | 0x00FF);	//Multichannel set pulldown
-	bcm2835_delay(1);
+	//spiComs(AD5592_PULL_DOWN_SET | 0x00FF);	//Multichannel set pulldown
+	//bcm2835_delay(1);
 
-	//spiComs(0x1B00);	//ADC Buffer enabled, Precharge enabled
+	//spiComs(0x1B20);	//ADC Buffer enabled, Precharge enabled, ADC gain 0-2Vref
 	//spiComs(0x1900);	//ADC Buffer enabled
-	spiComs(0x1A00);	//Precharge enable--d
+	//spiComs(0x1A00);	//Precharge enabled
+	//spiComs(0x1A20);	//Precharge enabled, ADC gain 0-2Vref
+	spiComs(0x1820);
 	bcm2835_delay(1);
-
 	spiComs(0x20FF); //Set all pins as ADC
 	analogInPins = 0xFF;
+	bcm2835_delay(1);
+	spiComs(0x5A00);	//Enable Internal reference
+	bcm2835_delay(1);
 	bcm2835_delay(LONG_DELAY);
 	
 	uint16_t data[8] = {0};
+	uint16_t result = 0;
+	uint8_t index;
 	int us = 0;
 	FILE *filePointer;
 	time_t timeStamp;
@@ -246,16 +252,16 @@ int main(){
 	gettimeofday(&st, NULL);
 	spiComs(AD5592_ADC_READ | 0x02FF);	//Multichannel repeat
 	bcm2835_delay(.1);
-	spiComs(AD5592_NOP);
-	bcm2835_delay(.1);
-	uint16_t result = 0;
-	uint8_t index;
 	
 	do{
+		//spiComs(AD5592_ADC_READ | 0x00FF);	//Multichannel single
+		//bcm2835_delay(.1);
 		for(int i = 0; i < ACTIVE_CHANNELS; i++){
 			spiComs(AD5592_NOP);
 			result = ((spiIn[0] << 8) & 0x0F00) | (spiIn[1] & 0xFF);
 			index = (int)(spiIn[0] >> 4) & 0x7;
+			printf("Result: %u; ", result);
+			printf("Index: %d\n", index);
 			data[index] = d2a(result);
 			bcm2835_delay(.1);
 		}
@@ -266,6 +272,8 @@ int main(){
 		}
 		fprintf(filePointer, "\n");
 	}while(elapsed_time() < (duration*1000000));
+	spiComs(AD5592_ADC_READ | 0x0000);	//Multichannel stop read
+	spiComs(AD5592_NOP);
 	printf("\n------------------\n\n");
 	printf("Data recorded, check logs\n");
 	fclose(filePointer);

@@ -41,7 +41,7 @@ def find_code():
             else:
                 code[k] = 0
         #print("Code", code)
-        code_count[j] = find_rotation(code, j)
+        #code_count[j] = find_rotation(code, j)
         #print("Time:", x[j], "us; ", "Code:", code, "; Position: ", code_count[j])
         
 def find_rotation(code, j):
