@@ -226,7 +226,7 @@ int main(){
 	//spiComs(0x1900);	//ADC Buffer enabled
 	//spiComs(0x1A00);	//Precharge enabled
 	//spiComs(0x1A20);	//Precharge enabled, ADC gain 0-2Vref
-	spiComs(0x1820);
+	spiComs(0x1820);	//ADC gain 0-2Vref
 	bcm2835_delay(1);
 	spiComs(0x20FF); //Set all pins as ADC
 	analogInPins = 0xFF;
@@ -250,7 +250,7 @@ int main(){
 	printf("\n------------------\n\n");
 	printf("Taking readings.....\n");
 	gettimeofday(&st, NULL);
-	spiComs(AD5592_ADC_READ | 0x02FF);	//Multichannel repeat
+	spiComs(AD5592_ADC_READ | 0x02FF);	//Read ADC from channels 1-8, set 'repeat' bit HIGH
 	bcm2835_delay(.1);
 	
 	do{
