@@ -27,7 +27,8 @@ def analyze_data():
     for i in range(0, int(display_num)):
         rising_edge[i] = np.zeros(len(y[i]), dtype = int)
         rising_edge_detect(y[i], i)
-        calculate_rpm(i)
+        if (i%2 == 0)&(i < 6):
+            calculate_rpm(i)
     find_code()
 
 def find_code():
@@ -83,12 +84,18 @@ def comparator(data, vref):
     elif data < vref:
         return 0
 
+def collect_rpm():
+    file = open(fileName + '__speedData', 'w')
+
 def graph_data():
     if(display_code == 'c'):
         plt.plot(x,code_count)
         plt.ylabel('Position')
     elif(int(display_num) > 1):
-        fig,axs = plt.subplots(int(display_num))
+        if display_code == 'f':
+            fig,axs = plt.subplots(3)
+        else:
+            fig,axs = plt.subplots(int(display_num))
         fig.suptitle('ADC Sampling:\n' + fileName)
         for j in range(0,int(display_num)):
             if(display_code == 'n'):
@@ -96,8 +103,13 @@ def graph_data():
             if(display_code == 'r'):
                 axs[j].plot(x,rising_edge[j])
             if(display_code == 'f'):
-                axs[j].plot(x,freq_count[j])
-            axs[j].set(ylabel = 'Signal {} [mV]'.format(j))
+                if (j%2 == 0)&(j < 6):
+                    axs[j//2].plot(x,freq_count[j])
+            if display_code == 'f':
+                if (j%2 == 0)&(j < 6):
+                    axs[j//2].set(ylabel = 'Signal {} [mV]'.format(j//2))
+            else:
+                axs[j].set(ylabel = 'Signal {} [mV]'.format(j))
     else:
         if(display_code == 'n'):
             plt.plot(x,y[0])
@@ -116,4 +128,5 @@ if __name__ == "__main__":
     collect_data()
     analyze_data()
     graph_data()
+    #collect_rpm()
     
