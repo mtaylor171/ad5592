@@ -202,7 +202,7 @@ void AD5592_Init();
 #include <time.h>
 #include <string.h>
 
-#define ACTIVE_CHANNELS 8
+#define ACTIVE_CHANNELS 3
 
 struct timeval st, et;
 
@@ -218,14 +218,20 @@ int main(){
 	setAD5592Ch(0);
 	spiComs(AD5592_SW_RESET);
 	bcm2835_delay(100);
-	spiComs(0x1820);	//ADC gain 0-2Vref
-	bcm2835_delay(1);
+	//spiComs(0x1820);	//ADC gain 0-2Vref
+	//bcm2835_delay(1);
 	spiComs(0x20FF); //Set all pins as ADC
 	analogInPins = 0xFF;
 	bcm2835_delay(1);
 	spiComs(0x5A00);	//Enable Internal reference
 	bcm2835_delay(1);
-
+	
+	//spiComs(0x1B20);	//ADC Buffer enabled, Precharge enabled, ADC gain 0-2Vref
+	//spiComs(0x1900);	//ADC Buffer enabled
+	//spiComs(0x1A00);	//Precharge enabled
+	//spiComs(0x1A20);	//Precharge enabled, ADC gain 0-2Vref
+	spiComs(0x1AA0);	//Precharge enabled, ADC gain 0-2Vref, Lock
+	
 	bcm2835_delay(LONG_DELAY);
 	
 	uint16_t data[8] = {0};
@@ -245,11 +251,11 @@ int main(){
 	gettimeofday(&st, NULL);
 	
 	do{
-		for(int i = 0; i < 1; i++){
-			result = getAnalogIn(1);
+		for(int i = 0; i < ACTIVE_CHANNELS; i++){
+			result = getAnalogIn(i);
 			printf("Result: %u; ", result);
-			data[index] = d2a(result);
-			bcm2835_delay(.01);
+			data[i] = result;
+			bcm2835_delay(.001);
 		}
 		gettimeofday(&et, NULL);
 		fprintf(filePointer, "%d", elapsed_time());
