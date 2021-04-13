@@ -251,7 +251,7 @@ int main(){
 	printf("Taking readings.....\n");
 	gettimeofday(&st, NULL);
 	spiComs(AD5592_ADC_READ | 0x02FF);	//Read ADC from channels 1-8, set 'repeat' bit HIGH
-	bcm2835_delay(.1);
+	bcm2835_delay(.001);
 	
 	do{
 		//spiComs(AD5592_ADC_READ | 0x00FF);	//Multichannel single
@@ -263,7 +263,7 @@ int main(){
 			printf("Result: %u; ", result);
 			printf("Index: %d\n", index);
 			data[index] = d2a(result);
-			bcm2835_delay(.1);
+			bcm2835_delay(.001);
 		}
 		gettimeofday(&et, NULL);
 		fprintf(filePointer, "%d", elapsed_time());
