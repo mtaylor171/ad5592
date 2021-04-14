@@ -202,9 +202,9 @@ void AD5592_Init();
 #include <time.h>
 #include <string.h>
 
-#define ACTIVE_CHANNELS 3
 
-struct timeval st, et;
+
+#define ACTIVE_CHANNELS 3
 
 int main(){
 	int duration;
@@ -271,12 +271,16 @@ int main(){
 	fclose(filePointer);
 	return 0;
 }
+
+struct timeval st, et;
  
 
 long int elapsed_time(){
 	long int elapsed = ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec);
 	return elapsed;
 }
+
+
 
 /**
  * Clear the spi buffer.
