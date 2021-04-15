@@ -62,7 +62,7 @@ plt.ylabel('Signal')
 CHANNELS = 8
 initial_us = 0
 
-so_file = "/home/pi/Documents/AD5592_Snack_Board/ad5592_spi_read.so"
+so_file = "/home/pi/Documents/Motor Board/ad5592/ad5592_spi_read.so"
 my_functions = CDLL(so_file)
     
 def animation_ex():

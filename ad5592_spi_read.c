@@ -211,16 +211,7 @@ int initialize(){
 	AD5592_Init();
 	setAD5592Ch(0);
 	spiComs(AD5592_SW_RESET);
-
-	setAsADC(AD5592_IO0);
-	setAsADC(AD5592_IO1);
-	setAsADC(AD5592_IO2);
-	setAsADC(AD5592_IO3);
-	setAsADC(AD5592_IO4);
-	setAsADC(AD5592_IO5);
-	setAsADC(AD5592_IO6);
-	setAsADC(AD5592_IO7);
-
+	bcm2835_delay(1);
 	spiComs(0x1820);	//ADC gain 0-2Vref
 	bcm2835_delay(1);
 	spiComs(0x20FF); //Set all pins as ADC
@@ -468,6 +459,27 @@ uint16_t getAnalogIn(uint8_t pin)
 	/* Return result */
 	return d2a(result);
 }
+
+void getAnalogInAll_InitialSend()
+{
+	spiComs(AD5592_ADC_READ | 0x02FF);
+	bcm2835_delay(0.1);
+}
+
+uint16_t getAnalogInAll_Receive(uint8_t pin)
+{
+	spiComs(AD5592_NOP);
+	bcm2835_delay(0.1);
+	uint16_t result = ((spiIn[0] << 8) & 0xFF00) | (spiIn[1] & 0x00FF);
+	return result;
+}
+
+void getAnalogInAll_Terminate()
+{
+	spiComs(AD5592_ADC_READ | 0x0000);	//Multichannel stop read
+	spiComs(AD5592_NOP);
+}
+
 
 /**
  * Initialize the SPI for using the AD5592. Does not set channel. Do that
