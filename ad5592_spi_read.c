@@ -193,6 +193,8 @@ uint32_t elapsed_time();
  */
 void AD5592_Init();
 
+int initialize_motor();
+
 #endif /* SOURCES_AD5592RPI_H_ */
 
 /* Main Program */
@@ -209,6 +211,9 @@ struct timeval st, et;
 
 int initialize(){
 	AD5592_Init();
+	printf("C Comms");
+	if(!initialize_motor()){
+		return 1;
 	setAD5592Ch(0);
 	spiComs(AD5592_SW_RESET);
 	bcm2835_delay(1);
@@ -255,6 +260,51 @@ uint32_t elapsed_time(){
  * Parameters:
  * 	spiBuffer[] = spi buffer
  */
+
+int initialize_motor(){
+	setAD5592Ch(1);
+	bcm2835_delay(1);
+	spiComs(0x0420);
+	bcm2835_delay(1);
+	while(spi[0] != 0x20):
+		spiComs(0x0420);
+	bcm2835_delay(1);
+	spiComs(0x0540)
+	bcm2835_delay(1);
+	spiComs(0x06CC)
+	bcm2835_delay(1);
+	spiComs(0x07CC)
+	bcm2835_delay(1);
+	spiComs(0x08CC)
+	bcm2835_delay(1);
+	spiComs(0x0999)
+	bcm2835_delay(1);
+	spiComs(0x0A99)
+	bcm2835_delay(1);
+	spiComs(0x0B99)
+	bcm2835_delay(1);
+	spiComs(0x0C2C)
+	bcm2835_delay(1);
+	spiComs(0x0D61)
+	bcm2835_delay(1);
+	spiComs(0x0E00)
+	bcm2835_delay(1);
+	spiComs(0x0F2A)
+	bcm2835_delay(1);
+	spiComs(0x107F)
+	bcm2835_delay(1);
+	spiComs(0x1100)
+	bcm2835_delay(1);
+	spiComs(0x1200)
+	bcm2835_delay(1);
+	if(motor_register_read){
+		return 0;
+	}
+	else{
+		return 1;
+	}
+}
+
 void clearBuffer(char spiBuffer[])
 {
 	int i;

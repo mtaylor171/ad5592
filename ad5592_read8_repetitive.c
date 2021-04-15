@@ -218,14 +218,6 @@ int main(){
 	setAD5592Ch(0);
 	spiComs(AD5592_SW_RESET);
 	bcm2835_delay(100);
-	
-	//spiComs(AD5592_PULL_DOWN_SET | 0x00FF);	//Multichannel set pulldown
-	//bcm2835_delay(1);
-
-	//spiComs(0x1B20);	//ADC Buffer enabled, Precharge enabled, ADC gain 0-2Vref
-	//spiComs(0x1900);	//ADC Buffer enabled
-	//spiComs(0x1A00);	//Precharge enabled
-	//spiComs(0x1A20);	//Precharge enabled, ADC gain 0-2Vref
 	spiComs(0x1820);	//ADC gain 0-2Vref
 	bcm2835_delay(1);
 	spiComs(0x20FF); //Set all pins as ADC
