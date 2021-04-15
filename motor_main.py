@@ -8,8 +8,11 @@ import datetime
 import time
 import sys
 import random
+from gpiozero import LED
 
 ACTIVE_CHANNELS = 8
+
+motor_en = LED(22)
 
 x_len = 200
 y_range = [0, 3500]
@@ -29,8 +32,19 @@ my_functions = CDLL(so_file)
 
 def initialize_spi():
     global initial_us
+    motor_en.on()
+    if(my_functions.initialize_motor() == 0):
+        print("Motor Initialize Successful!\n")
+    else:
+        print("WARNING: Initialize Failed")
+        sys.exit()
+    for i in range(0, 19):
+        reg_data = my_functions.motor_register_read(i)
+        print('Register {}:'.format(i) + ' {}'.format(hex(reg_data)));
+        print('\n')
+    #sys.exit()
     if(my_functions.initialize() == 0):
-        print("Initialize Successful!\n")
+        print("ADC Initialize Successful!\n")
     else:
         print("WARNING: Initialize Failed")
         sys.exit()  
