@@ -9,7 +9,7 @@ import time
 import sys
 import random
 
-ACTIVE CHANNELS = 8
+ACTIVE_CHANNELS = 8
 
 x_len = 200
 y_range = [0, 3500]
@@ -67,21 +67,27 @@ def find_position(code):
 
 #def rising_edge_detect(data_new, data_old):
 
-def data_process(data, adc_reading, index):
-    adc_reading = data | 0x0FFF
-    index = (data >> 12) & 0x7;
+def data_process(data):
+    adc_reading = int((data & 0x0FFF) / 0.819)
+    index = ((data >> 12) & 0x7)
+    return adc_reading, index
 
 def read_adc():
     temp_data = np.uint32([0,0,0,0,0,0,0,0,0])
-    adc_reading = 0
-    index = None
+    adc_reading = 0x0
+    index = 0x0
+    dat_16bit = 0x0
     my_functions.getAnalogInAll_InitialSend()
     while(1):
         for i in range(0, ACTIVE_CHANNELS):
             data_16bit = my_functions.getAnalogInAll_Receive()
-            data_process(data_16bit, adc_reading, index)
+            #data = my_functions.getAnalogIn(i)
+            #print(data)
+            adc_reading, index = data_process(data_16bit)
+            print('Data {}'.format(index) + ': {}'.format(adc_reading))
             temp_data[index+1] = adc_reading
         temp_data[0] = get_elapsed_us()
+        print('Time Elapsed: {}'.format(temp_data[0]))
         writer = csv.writer(file)
         writer.writerow(temp_data)
         if(duration != 'r'):

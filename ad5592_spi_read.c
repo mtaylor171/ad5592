@@ -466,7 +466,7 @@ void getAnalogInAll_InitialSend()
 	bcm2835_delay(0.1);
 }
 
-uint16_t getAnalogInAll_Receive(uint8_t pin)
+uint16_t getAnalogInAll_Receive()
 {
 	spiComs(AD5592_NOP);
 	bcm2835_delay(0.1);
