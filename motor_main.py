@@ -20,12 +20,22 @@ y_range = [0, 3500]
 filename = str(datetime.datetime.now())
 file = open(filename, 'w', newline='')
 
+pwmpin = 32             # PWM pin connected to LED
+GPIO.setwarnings(False)         #disable warnings
+GPIO.setmode(GPIO.BOARD)        #set pin numbering system
+GPIO.setup(pwmpin,GPIO.OUT)
+pi_pwm = GPIO.PWM(pwmpin,1000)      #create PWM instance with frequency
+pi_pwm.start(20)             #start PWM of required Duty Cycle 
+
 plt.title('ADC Data')
 plt.xlabel('Time (ms)')
 plt.ylabel('Signal')
 
 CHANNELS = 8
 initial_us = 0
+pwm_target = 0
+duration = 0
+pwm_current = 0
 
 so_file = "/home/pi/Documents/Motor Board/ad5592/ad5592_spi_read.so"
 my_functions = CDLL(so_file)
@@ -45,18 +55,11 @@ def initialize_spi():
     reg_check = input("Are Registers correct? (y/n)")
     if(reg_check != 'y'):
         sys.exit()
-    #sys.exit()
     if(my_functions.initialize() == 0):
         print("ADC Initialize Successful!\n")
     else:
         print("WARNING: Initialize Failed")
         sys.exit()  
-    global duration
-    duration = input("Enter sample duration (type 'r' for inifinite):")
-    writer = csv.writer(file)
-    writer.writerow(["Time (us)", "Signal 0", "Signal 1", "Signal 2", "Signal 3", "Signal 4", "Signal 5", "Signal 6", "Signal 7"])
-    time.sleep(.1)
-    initial_us = get_us()
 
 def get_us():
     now = datetime.datetime.now()
@@ -89,6 +92,27 @@ def data_process(data):
     index = ((data >> 12) & 0x7)
     return adc_reading, index
 
+def user_inputs():
+    duration = input("Enter sample duration (type 'r' for inifinite):")
+    writer = csv.writer(file)
+    writer.writerow(["Time (us)", "Signal 0", "Signal 1", "Signal 2", "Signal 3", "Signal 4", "Signal 5", "Signal 6", "Signal 7"])
+    time.sleep(.1)
+    initial_us = get_us()
+    pwm_target = input("Enter target duty cycle:")
+    pwm_current = 0
+    pi_pwm.start(pwm_current)
+    
+def pwm_control():
+    if(pwm_current < pwm_target):
+        pwm_current = pwm_current + 1
+    pi_pwm.ChangeDutyCycle(pwm_current)             #start PWM of required Duty Cycle
+
+def pwm_rampdown():
+    for duty in range(pwm_current,-1,-1):
+        pi_pwm.ChangeDutyCycle(duty)
+        sleep(0.2)
+    sys.exit()
+    
 def read_adc():
     temp_data = np.uint32([0,0,0,0,0,0,0,0,0])
     adc_reading = 0x0
@@ -96,23 +120,25 @@ def read_adc():
     dat_16bit = 0x0
     my_functions.getAnalogInAll_InitialSend()
     while(1):
+        pwm_control()
         for i in range(0, ACTIVE_CHANNELS):
             data_16bit = my_functions.getAnalogInAll_Receive()
             #data = my_functions.getAnalogIn(i)
             #print(data)
             adc_reading, index = data_process(data_16bit)
-            print('Data {}'.format(index) + ': {}'.format(adc_reading))
+            #print('Data {}'.format(index) + ': {}'.format(adc_reading))
             temp_data[index+1] = adc_reading
         temp_data[0] = get_elapsed_us()
-        print('Time Elapsed: {}'.format(temp_data[0]))
+        #print('Time Elapsed: {}'.format(temp_data[0]))
         writer = csv.writer(file)
         writer.writerow(temp_data)
         if(duration != 'r'):
             if(temp_data[0] >= int(duration) * 1000000):
                 my_functions.getAnalogInAll_Terminate()
-                sys.exit()
+                pwm_rampdown()
 
     
 if __name__ == "__main__":
     initialize_spi()
+    user_inputs()
     read_adc()
