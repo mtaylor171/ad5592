@@ -42,6 +42,9 @@ def initialize_spi():
         reg_data = my_functions.motor_register_read(i)
         print('Register {}:'.format(i) + ' {}'.format(hex(reg_data)));
         print('\n')
+    reg_check = input("Are Registers correct? (y/n)")
+    if(reg_check != 'y'):
+        sys.exit()
     #sys.exit()
     if(my_functions.initialize() == 0):
         print("ADC Initialize Successful!\n")
