@@ -26,9 +26,9 @@ GPIO.setup(pwmpin,GPIO.OUT)
 pi_pwm = GPIO.PWM(pwmpin,25000)      #create PWM instance with frequency
 GPIO.setup(motor_en, GPIO.OUT)
 
-plt.title('ADC Data')
+plt.title('Frequency of Motor')
 plt.xlabel('Time (ms)')
-plt.ylabel('Signal')
+plt.ylabel('Frequency (Hz)')
 
 CHANNELS = 8
 initial_us = 0
@@ -43,6 +43,10 @@ freq_count = []
 
 
 data = [[],[],[],[],[],[],[],[], []]
+
+x = []
+v = []
+r = []
 
 so_file = "/home/pi/Documents/motor_board/ad5592/ad5592_spi_read.so"
 my_functions = CDLL(so_file)
@@ -135,7 +139,7 @@ def motor_shutdown():
     sys.exit()
 
 def get_rpm(position_hold_time):
-    freq = (1000000/(get_us() - position_hold_time))/6
+    freq = (100000/((get_us() - position_hold_time)*6))
     freq_count.append(freq)
     return freq
 
@@ -151,7 +155,7 @@ def stall_check(temp_data):
     position = find_position(code)
     if(last_position != position):
         freq = get_rpm(position_hold_time)
-        print("Position: {}".format(position) + "Frequency: {}".format(freq))
+        print("Position: {}, ".format(position) + "Time: {}, ".format(get_us() - position_hold_time) + "Frequency: {}".format(freq))
         position_hold_time = get_us()
         last_position = position
     else:
@@ -159,8 +163,33 @@ def stall_check(temp_data):
             print("****WARNING: STALL DETECTED****")
             motor_shutdown()
 
+def filter_data(freq_count):
+    global x
+    global v
+    global r
+    x_k_1 = 0.0
+    v_k_1 = 0.0
+    dt = 0.5 
+
+    alpha = 0.01
+    beta = .0001
+    for k in range(len(freq_count)):
+        x_k = x_k_1 + dt*v_k_1
+        v_k = v_k_1
+        r_k = freq_count[k] - x_k
+        x_k = x_k + alpha * r_k 
+        v_k = v_k + (beta/dt)*r_k
+
+        x_k_1 = x_k
+        v_k_1 = v_k
+
+        x.append(x_k)
+        v.append(v_k)
+        r.append(r_k)   
+
 def graph_data():
-    plt.plot(freq_count)
+    filter_data(freq_count)
+    plt.plot(x)
     plt.show()
 
 def read_adc():
