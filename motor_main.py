@@ -26,10 +26,9 @@ GPIO.setup(pwmpin,GPIO.OUT)
 pi_pwm = GPIO.PWM(pwmpin,25000)      #create PWM instance with frequency
 GPIO.setup(motor_en, GPIO.OUT)
 
-fig, axs = plt.subplots(2)
-fig.suptitle('Frequency of Motor')
+fig, axs = plt.subplots(4)
+fig.suptitle('Motor Health')
 plt.xlabel('Time (ms)')
-plt.ylabel('Motor speed (rev/s)')
 
 CHANNELS = 8
 initial_us = 0
@@ -43,11 +42,16 @@ position_hold_time = 0
 freq_count = [[],[]]
 
 
-data = [[],[],[],[],[],[],[],[], []]
+data = [[],[],[],[],[],[],[],[],[]]
 
 x = []
 v = []
 r = []
+x_k_1 = 0.0
+v_k_1 = 0.0
+dt = 0.5 
+alpha = 0.01
+beta = .0001
 
 so_file = "/home/pi/Documents/motor_board/ad5592/ad5592_spi_read.so"
 my_functions = CDLL(so_file)
@@ -128,7 +132,7 @@ def motor_rampdown():
     for duty in range(pwm_current,-1,-1):
         pi_pwm.ChangeDutyCycle(duty)
         print("PWM: {}".format(duty))
-        time.sleep(0.05)
+        time.sleep(0.5)
     GPIO.output(motor_en, 0)
     graph_data()
     sys.exit()
@@ -150,7 +154,7 @@ def get_rpm(position_hold_time):
     freq_count[1].append(freq)
     return freq
 
-def stall_check(temp_data):
+def health_check(temp_data):
     global last_position
     global position_hold_time
     code = [0,0,0]
@@ -163,8 +167,9 @@ def stall_check(temp_data):
     if(last_position != position):
         if(last_position != 0):
             freq = get_rpm(position_hold_time)
-            reluctance = motor_reluctance(freq)
-            print("Elapsed: {}, ".format(get_elapsed_us(initial_us)) + "Position: {}, ".format(position) + "Frequency: {} ".format(round(freq, 2)) + "Freq/PWM = {}".format(reluctance))
+            running_filter(freq)
+            reluctance = motor_reluctance(x[-1])
+            print("Elapsed: {}, ".format(get_elapsed_us(initial_us)) + "Position: {}, ".format(position) + "Frequency: {} ".format(round(freq, 2)) + "Filtered freq: {} ".format(x[-1]) +"PWM: {} ".format(pwm_current) + "Freq/PWM = {}".format(reluctance))
         position_hold_time = get_us()
         last_position = position
     else:
@@ -172,34 +177,32 @@ def stall_check(temp_data):
             print("****WARNING: STALL DETECTED****")
             motor_shutdown()
 
-def filter_data(freq_count):
+def running_filter(freq_data_current):
     global x
     global v
     global r
-    x_k_1 = 0.0
-    v_k_1 = 0.0
-    dt = 0.5 
+    global x_k_1
+    global v_k_1
 
-    alpha = 0.01
-    beta = .0001
-    for k in range(len(freq_count)):
-        x_k = x_k_1 + dt*v_k_1
-        v_k = v_k_1
-        r_k = freq_count[k] - x_k
-        x_k = x_k + alpha * r_k 
-        v_k = v_k + (beta/dt)*r_k
+    x_k = x_k_1 + dt*v_k_1
+    v_k = v_k_1
+    r_k = freq_data_current - x_k
+    x_k = x_k + alpha * r_k 
+    v_k = v_k + (beta/dt)*r_k
 
-        x_k_1 = x_k
-        v_k_1 = v_k
+    x_k_1 = x_k
+    v_k_1 = v_k
 
-        x.append(x_k)
-        v.append(v_k)
-        r.append(r_k)   
+    x.append(x_k)
+    v.append(v_k)
+    r.append(r_k)      
 
 def graph_data():
-    filter_data(freq_count[1])
+    #filter_data(freq_count[1])
     axs[0].plot(freq_count[0], x)
-    axs[1].plot(freq_count[0], freq_count[1])
+    axs[1].plot(data[4])
+    axs[2].plot(data[5])
+    axs[3].plot(data[6])
     plt.show()
 
 def read_adc():
@@ -216,7 +219,7 @@ def read_adc():
     position_hold_time = get_us()
     while(1):
         try:
-            if((pwm_counter % 50) == 0):
+            if((pwm_counter % 1000) == 0):
                 pwm_control()
             pwm_counter = pwm_counter + 1
             for i in range(0, ACTIVE_CHANNELS):
@@ -229,7 +232,7 @@ def read_adc():
             #print('Time Elapsed: {}'.format(temp_data[0]))
             writer = csv.writer(file)
             writer.writerow(temp_data)
-            stall_check(temp_data)
+            health_check(temp_data)
             if(duration != 'r'):
                 if(temp_data[0] >= int(duration) * 1000000):
                     my_functions.getAnalogInAll_Terminate()
