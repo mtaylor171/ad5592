@@ -26,9 +26,10 @@ GPIO.setup(pwmpin,GPIO.OUT)
 pi_pwm = GPIO.PWM(pwmpin,25000)      #create PWM instance with frequency
 GPIO.setup(motor_en, GPIO.OUT)
 
-plt.title('Frequency of Motor')
+fig, axs = plt.subplots(2)
+fig.suptitle('Frequency of Motor')
 plt.xlabel('Time (ms)')
-plt.ylabel('Frequency (Hz)')
+plt.ylabel('Motor speed (rev/s)')
 
 CHANNELS = 8
 initial_us = 0
@@ -39,7 +40,7 @@ pwm_current = 0
 code_count = [[],[],[]]
 last_position = 0
 position_hold_time = 0
-freq_count = []
+freq_count = [[],[]]
 
 
 data = [[],[],[],[],[],[],[],[], []]
@@ -127,7 +128,7 @@ def motor_rampdown():
     for duty in range(pwm_current,-1,-1):
         pi_pwm.ChangeDutyCycle(duty)
         print("PWM: {}".format(duty))
-        time.sleep(0.1)
+        time.sleep(0.05)
     GPIO.output(motor_en, 0)
     graph_data()
     sys.exit()
@@ -136,11 +137,17 @@ def motor_shutdown():
     print("Starting shutdown...")
     pi_pwm.ChangeDutyCycle(0)
     GPIO.output(motor_en,0)
+    graph_data()
     sys.exit()
+
+def motor_reluctance(freq):
+    temp_reluctance = freq/pwm_current
+    return temp_reluctance
 
 def get_rpm(position_hold_time):
     freq = (100000/((get_us() - position_hold_time)*6))
-    freq_count.append(freq)
+    freq_count[0].append(get_elapsed_us(initial_us))
+    freq_count[1].append(freq)
     return freq
 
 def stall_check(temp_data):
@@ -154,8 +161,10 @@ def stall_check(temp_data):
             code[i-1] = 0
     position = find_position(code)
     if(last_position != position):
-        freq = get_rpm(position_hold_time)
-        print("Position: {}, ".format(position) + "Time: {}, ".format(get_us() - position_hold_time) + "Frequency: {}".format(freq))
+        if(last_position != 0):
+            freq = get_rpm(position_hold_time)
+            reluctance = motor_reluctance(freq)
+            print("Elapsed: {}, ".format(get_elapsed_us(initial_us)) + "Position: {}, ".format(position) + "Frequency: {} ".format(round(freq, 2)) + "Freq/PWM = {}".format(reluctance))
         position_hold_time = get_us()
         last_position = position
     else:
@@ -188,8 +197,9 @@ def filter_data(freq_count):
         r.append(r_k)   
 
 def graph_data():
-    filter_data(freq_count)
-    plt.plot(x)
+    filter_data(freq_count[1])
+    axs[0].plot(freq_count[0], x)
+    axs[1].plot(freq_count[0], freq_count[1])
     plt.show()
 
 def read_adc():
