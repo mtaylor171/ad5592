@@ -39,6 +39,8 @@ pwm_current = 0
 code_count = [[],[],[]]
 last_position = 0
 position_hold_time = 0
+freq_count = []
+
 
 data = [[],[],[],[],[],[],[],[], []]
 
@@ -123,6 +125,7 @@ def motor_rampdown():
         print("PWM: {}".format(duty))
         time.sleep(0.1)
     GPIO.output(motor_en, 0)
+    graph_data()
     sys.exit()
 
 def motor_shutdown():
@@ -131,8 +134,10 @@ def motor_shutdown():
     GPIO.output(motor_en,0)
     sys.exit()
 
-def get_rpm():
-    
+def get_rpm(position_hold_time):
+    freq = (1000000/(get_us() - position_hold_time))/6
+    freq_count.append(freq)
+    return freq
 
 def stall_check(temp_data):
     global last_position
@@ -145,13 +150,18 @@ def stall_check(temp_data):
             code[i-1] = 0
     position = find_position(code)
     if(last_position != position):
-        get_rpm()
+        freq = get_rpm(position_hold_time)
+        print("Position: {}".format(position) + "Frequency: {}".format(freq))
         position_hold_time = get_us()
         last_position = position
     else:
         if((get_us() - position_hold_time) > 500000):
             print("****WARNING: STALL DETECTED****")
             motor_shutdown()
+
+def graph_data():
+    plt.plot(freq_count)
+    plt.show()
 
 def read_adc():
     global initial_us
