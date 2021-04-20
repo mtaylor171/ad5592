@@ -36,6 +36,12 @@ pwm_target = 0
 duration = 0
 pwm_current = 0
 
+code_count = [[],[],[]]
+last_position = 0
+position_hold_time = 0
+
+data = [[],[],[],[],[],[],[],[], []]
+
 so_file = "/home/pi/Documents/motor_board/ad5592/ad5592_spi_read.so"
 my_functions = CDLL(so_file)
 
@@ -64,24 +70,24 @@ def get_us():
     now = datetime.datetime.now()
     return (now.minute*60000000)+(now.second*1000000)+(now.microsecond)
     
-def get_elapsed_us():
+def get_elapsed_us(timestamp):
     temp = get_us()
-    return (temp - initial_us)
+    return (temp - timestamp)
 
 def find_position(code):
     if code == [1, 0, 1]:
         return 1
-    if code == [0, 0, 1]:
+    elif code == [0, 0, 1]:
         return 2
-    if code == [0, 1, 1]:
+    elif code == [0, 1, 1]:
         return 3
-    if code == [0, 1, 0]:
+    elif code == [0, 1, 0]:
         return 4
-    if code == [1, 1, 0]:
+    elif code == [1, 1, 0]:
         return 5
-    if code == [1, 0, 0]:
+    elif code == [1, 0, 0]:
         return 6
-    if code == [0, 0, 0]:
+    else:
         return 0
 
 #def rising_edge_detect(data_new, data_old):
@@ -107,20 +113,50 @@ def pwm_control():
     global pwm_current
     if(pwm_current < int(pwm_target)):
         pwm_current = pwm_current + 1
+        print("PWM: {}".format(pwm_current))
     pi_pwm.ChangeDutyCycle(pwm_current)             #start PWM of required Duty Cycle
-    #print("PWM: {}".format(pwm_current))
 
 def motor_rampdown():
     print("Starting rampdown...")
     for duty in range(pwm_current,-1,-1):
         pi_pwm.ChangeDutyCycle(duty)
-        #print("PWM: {}".format(duty))
+        print("PWM: {}".format(duty))
         time.sleep(0.1)
     GPIO.output(motor_en, 0)
     sys.exit()
+
+def motor_shutdown():
+    print("Starting shutdown...")
+    pi_pwm.ChangeDutyCycle(0)
+    GPIO.output(motor_en,0)
+    sys.exit()
+
+def get_rpm():
     
+
+def stall_check(temp_data):
+    global last_position
+    global position_hold_time
+    code = [0,0,0]
+    for i in range(1,4):
+        if(temp_data[i] > 2500):
+            code[i-1] = 1
+        else:
+            code[i-1] = 0
+    position = find_position(code)
+    if(last_position != position):
+        get_rpm()
+        position_hold_time = get_us()
+        last_position = position
+    else:
+        if((get_us() - position_hold_time) > 500000):
+            print("****WARNING: STALL DETECTED****")
+            motor_shutdown()
+
 def read_adc():
     global initial_us
+    global position_hold_time
+    global data
     temp_data = np.uint32([0,0,0,0,0,0,0,0,0])
     adc_reading = 0x0
     index = 0x0
@@ -128,22 +164,23 @@ def read_adc():
     pwm_counter = 0
     initial_us = get_us()
     my_functions.getAnalogInAll_InitialSend()
+    position_hold_time = get_us()
     while(1):
         try:
-            if((pwm_counter % 2) == 0):
+            if((pwm_counter % 50) == 0):
                 pwm_control()
             pwm_counter = pwm_counter + 1
             for i in range(0, ACTIVE_CHANNELS):
                 data_16bit = my_functions.getAnalogInAll_Receive()
-                #data = my_functions.getAnalogIn(i)
-                #print(data)
                 adc_reading, index = data_process(data_16bit)
-                #print('Data {}'.format(index) + ': {}'.format(adc_reading))
                 temp_data[index+1] = adc_reading
-            temp_data[0] = get_elapsed_us()
-            print('Time Elapsed: {}'.format(temp_data[0]))
+                data[index+1].append(temp_data[index+1])
+            temp_data[0] = get_elapsed_us(initial_us)
+            data[0].append(temp_data[0])
+            #print('Time Elapsed: {}'.format(temp_data[0]))
             writer = csv.writer(file)
             writer.writerow(temp_data)
+            stall_check(temp_data)
             if(duration != 'r'):
                 if(temp_data[0] >= int(duration) * 1000000):
                     my_functions.getAnalogInAll_Terminate()
