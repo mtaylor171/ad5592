@@ -35,6 +35,7 @@ initial_us = 0
 pwm_target = 0
 duration = 0
 pwm_current = 0
+position_cntr = 0
 
 code_count = [[],[],[]]
 last_position = 0
@@ -43,6 +44,7 @@ freq_count = [[],[]]
 
 
 data = [[],[],[],[],[],[],[],[],[]]
+data_single_revolution = [[],[],[],[]]
 
 x = []
 v = []
@@ -169,7 +171,11 @@ def health_check(temp_data):
             freq = get_rpm(position_hold_time)
             running_filter(freq)
             reluctance = motor_reluctance(x[-1])
-            print("Elapsed: {}, ".format(get_elapsed_us(initial_us)) + "Position: {}, ".format(position) + "Frequency: {} ".format(round(freq, 2)) + "Filtered freq: {} ".format(x[-1]) +"PWM: {} ".format(pwm_current) + "Freq/PWM = {}".format(reluctance))
+            position_cntr = position_cntr + 1
+            if(position_cntr == 6):
+                rms_val = revolution_rms()
+                position_cntr = 0
+            print("Elapsed: {}, ".format(get_elapsed_us(initial_us)) + "Position: {}, ".format(position) + "Frequency: {} ".format(round(freq, 2)) + "Filtered freq: {} ".format(x[-1]) +"PWM: {} ".format(pwm_current) + "Freq/PWM = {} ".format(reluctance) + "RMS Current: {}".format(rms_val))
         position_hold_time = get_us()
         last_position = position
     else:
@@ -195,7 +201,31 @@ def running_filter(freq_data_current):
 
     x.append(x_k)
     v.append(v_k)
-    r.append(r_k)      
+    r.append(r_k)
+
+
+def running_filter_time(freq_data_current):
+    global x
+    global v
+    global r
+    global x_k_1
+    global v_k_1
+
+    x_k = x_k_1 + dt*v_k_1
+    v_k = v_k_1
+    r_k = freq_data_current - x_k
+    x_k = x_k + alpha * r_k 
+    v_k = v_k + (beta/dt)*r_k
+
+    x_k_1 = x_k
+    v_k_1 = v_k
+
+    x.append(x_k)
+    v.append(v_k)
+    r.append(r_k)       
+
+def revolution_rms():
+
 
 def graph_data():
     #filter_data(freq_count[1])
@@ -209,6 +239,7 @@ def read_adc():
     global initial_us
     global position_hold_time
     global data
+    global data_single_revolution
     temp_data = np.uint32([0,0,0,0,0,0,0,0,0])
     adc_reading = 0x0
     index = 0x0
