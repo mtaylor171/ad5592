@@ -215,7 +215,7 @@ int initialize(){
 	setAD5592Ch(0);
 	spiComs(AD5592_SW_RESET);
 	bcm2835_delay(1);
-	spiComs(0x1820);	//ADC gain 0-2Vref
+	spiComs(0x1920);	//ADC gain 0-2Vref
 	bcm2835_delay(1);
 	spiComs(0x20FF); //Set all pins as ADC
 	analogInPins = 0xFF;
@@ -291,7 +291,7 @@ int initialize_motor(){
 	bcm2835_delay(1);
 	spiComs(0x0F15);
 	bcm2835_delay(1);
-	spiComs(0x107F);
+	spiComs(0x103F);
 	bcm2835_delay(1);
 	spiComs(0x1100);
 	bcm2835_delay(1);

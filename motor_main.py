@@ -159,6 +159,7 @@ def get_rpm(position_hold_time):
 def health_check(temp_data):
     global last_position
     global position_hold_time
+    global position_cntr
     code = [0,0,0]
     for i in range(1,4):
         if(temp_data[i] > 2500):
@@ -175,6 +176,8 @@ def health_check(temp_data):
             if(position_cntr == 6):
                 rms_val = revolution_rms()
                 position_cntr = 0
+            else:
+                rms_val = 0
             print("Elapsed: {}, ".format(get_elapsed_us(initial_us)) + "Position: {}, ".format(position) + "Frequency: {} ".format(round(freq, 2)) + "Filtered freq: {} ".format(x[-1]) +"PWM: {} ".format(pwm_current) + "Freq/PWM = {} ".format(reluctance) + "RMS Current: {}".format(rms_val))
         position_hold_time = get_us()
         last_position = position
@@ -225,7 +228,7 @@ def running_filter_time(freq_data_current):
     r.append(r_k)       
 
 def revolution_rms():
-
+    return 0
 
 def graph_data():
     #filter_data(freq_count[1])
