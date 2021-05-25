@@ -74,11 +74,11 @@ def initialize_spi():
     reg_check = input("Are Registers correct? (y/n)")
     if(reg_check != 'y'):
         sys.exit()
-    if(my_functions.initialize() == 0):
-        print("ADC Initialize Successful!\n")
-    else:
-        print("WARNING: Initialize Failed")
-        sys.exit()  
+    #if(my_functions.initialize() == 0):
+    #    print("ADC Initialize Successful!\n")
+    #else:
+    #    print("WARNING: Initialize Failed")
+    #    sys.exit()  
 
 def get_us():
     now = datetime.datetime.now()
@@ -179,7 +179,7 @@ def health_check(temp_data):
                 position_cntr = 0
             else:
                 rms_val = 0
-            print("Elapsed: {}, ".format(get_elapsed_us(initial_us)) + "Position: {}, ".format(position) + "Frequency: {} ".format(round(freq, 2)) + "Filtered freq: {} ".format(x[-1]) +"PWM: {} ".format(pwm_current) + "Freq/PWM = {} ".format(reluctance) + "RMS Current: {}".format(rms_val))
+            #print("Elapsed: {}, ".format(get_elapsed_us(initial_us)) + "Position: {}, ".format(position) + "Frequency: {} ".format(round(freq, 2)) + "Filtered freq: {} ".format(x[-1]) +"PWM: {} ".format(pwm_current) + "Freq/PWM = {} ".format(reluctance) + "RMS Current: {}".format(rms_val))
         position_hold_time = get_us()
         last_position = position
     else:
@@ -239,6 +239,36 @@ def graph_data():
     axs[3].plot(data[6])
     plt.show()
 
+def read_errors():
+    global initial_us
+    global position_hold_time
+    global data
+    global data_single_revolution
+    temp_data = np.uint32([0,0,0,0,0,0,0,0,0])
+    adc_reading = 0x0
+    index = 0x0
+    dat_16bit = 0x0
+    pwm_counter = 0
+    initial_us = get_us()
+    while(1):
+        try:
+            if((pwm_counter % 1000) == 0):
+                pwm_control()
+            pwm_counter = pwm_counter + 1
+            for i in range(0, 4):
+                reg_data = my_functions.motor_register_read(i)
+                print('Register {}:'.format(i) + ' {}'.format(hex(reg_data)));
+                print('\n')
+                time.sleep(0.1)
+            if(duration != 'r'):
+                if(temp_data[0] >= int(duration) * 1000000):
+                    my_functions.getAnalogInAll_Terminate()
+                    motor_rampdown()
+        except KeyboardInterrupt:
+            my_functions.getAnalogInAll_Terminate()
+            motor_rampdown()
+    
+
 def read_adc():
     global initial_us
     global position_hold_time
@@ -279,4 +309,5 @@ def read_adc():
 if __name__ == "__main__":
     initialize_spi()
     user_inputs()
-    read_adc()
+    read_errors()
+    #read_adc()

@@ -269,13 +269,15 @@ int initialize_motor(){
 		spiComs(0x0420);
 	}
 	bcm2835_delay(1);
+	spiComs(0x0420);
+	bcm2835_delay(1);
 	spiComs(0x0540);
 	bcm2835_delay(1);
-	spiComs(0x06CC);
+	spiComs(0x06cc);
 	bcm2835_delay(1);
-	spiComs(0x07CC);
+	spiComs(0x07cc);
 	bcm2835_delay(1);
-	spiComs(0x08CC);
+	spiComs(0x08cc);
 	bcm2835_delay(1);
 	spiComs(0x0999);
 	bcm2835_delay(1);
