@@ -28,7 +28,7 @@ GPIO.setup(motor_en, GPIO.OUT)
 
 fig, axs = plt.subplots(4)
 fig.suptitle('Motor Health')
-plt.xlabel('Time (ms)')
+plt.xlabel('Time (us)')
 
 CHANNELS = 8
 initial_us = 0
@@ -234,9 +234,9 @@ def revolution_rms():
 def graph_data():
     #filter_data(freq_count[1])
     axs[0].plot(freq_count[0], x)
-    axs[1].plot(data[4])
-    axs[2].plot(data[5])
-    axs[3].plot(data[6])
+    axs[1].plot(data[0], data[4])
+    axs[2].plot(data[0], data[5])
+    axs[3].plot(data[0], data[6])
     plt.show()
 
 def read_adc():
@@ -247,7 +247,6 @@ def read_adc():
     temp_data = np.uint32([0,0,0,0,0,0,0,0,0])
     adc_reading = 0x0
     index = 0x0
-    dat_16bit = 0x0
     pwm_counter = 0
     initial_us = get_us()
     my_functions.getAnalogInAll_InitialSend()
