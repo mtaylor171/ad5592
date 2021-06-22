@@ -47,6 +47,23 @@
 #define DRV8343_IC13	0x10
 #define DRV8343_IC14 	0x11
 
+uint16_t motor_reg_arr[12][2] = {
+	{DRV8343_IC1, DRV8343_1xPWM},
+	{DRV8343_IC2, DRV8343_OLP5MS_SHORT2MS},
+	{DRV8343_IC3, DRV8343_IDRIVE_735MA},
+	{DRV8343_IC4, DRV8343_IDRIVE_735MA},
+	{DRV8343_IC5, DRV8343_IDRIVE_735MA},
+	{DRV8343_IC6, DRV8343_VDS_0V75},
+	{DRV8343_IC7, DRV8343_VDS_0V75},
+	{DRV8343_IC8, DRV8343_VDS_0V75},
+	{DRV8343_IC9, DRV8343_IC9_CONTROL},
+	{DRV8343_IC10, DRV8343_IC10_CONTROL},
+	{DRV8343_IC11, DRV8343_IC11_CONTROL},
+	{DRV8343_IC12, DRV8343_IC12_CONTROL},
+	{DRV8343_IC13, DRV8343_IC13_CONTROL},
+	{DRV8343_IC14, DRV8343_IC14_CONTROL}
+};
+
 /**
  * Control register definitions.
  * Refer to page 26 of AD5592R datasheet Rev A.
@@ -230,6 +247,8 @@ void AD5592_Init();
 
 int initialize_motor();
 
+int motor_initialize_check();
+
 uint16_t motor_register_read();
 
 #endif /* SOURCES_AD5592RPI_H_ */
@@ -298,49 +317,33 @@ int initialize_motor(){
 	int temp_counter = 0;
 	AD5592_Init();
 	setAD5592Ch(1);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC2 << 8) | DRV8343_1xPWM);
-	bcm2835_delay(1);
+	bcm2835_delay(10);
+	spiComs((DRV8343_IC1 << 8) | DRV8343_1xPWM);
+	bcm2835_delay(10);
 	while(spiIn[1] != 0x20){
-		spiComs((DRV8343_IC2 << 8) | DRV8343_1xPWM);  //Keeps trying to send first register command
+		spiComs((DRV8343_IC1 << 8) | DRV8343_1xPWM);  //Keeps trying to send first register command, in 100ms increments
 		bcm2835_delay(100); 
 		temp_counter ++;
-		if(temp_counter => 50){		//Try sending after 50ms increments
+		if(temp_counter => 50){
 			return 1;		//Timeout after 5 seconds of trying
 		}
 	}
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC2 << 8) | DRV8343_OLP5MS_SHORT2MS);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC3 << 8) | DRV8343_IDRIVE_735MA);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC4 << 8) | DRV8343_IDRIVE_735MA);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC5 << 8) | DRV8343_IDRIVE_735MA);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC6 << 8) | DRV8343_VDS_0V75);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC7 << 8) | DRV8343_VDS_0V75);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC8 << 8) | DRV8343_VDS_0V75);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC9 << 8) | DRV8343_IC9_CONTROL);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC10 << 8) | DRV8343_IC10_CONTROL);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC11 << 8) | DRV8343_IC11_CONTROL);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC12 << 8) | DRV8343_IC12_CONTROL);  //Changed from 0x0F15
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC13 << 8) | DRV8343_IC13_CONTROL);
-	bcm2835_delay(1);
-	spiComs((DRV8343_IC14 << 8) | DRV8343_IC14_CONTROL);
-	bcm2835_delay(1);
+	bcm2835_delay(10);
+	for(int i = 1; i < 15; i ++){
+		spiComs((motor_reg_arr[i][0] << 8) | motor_reg_arr[i][1]);
+		bcm2835_delay(10);
+	}
 	return 0;
 }
 
 int motor_initialize_check(){
-
+	for(int i = 0; i < 15; i++){
+		spiComs(0x8000 | (motor_reg_arr[i][0] << 8));
+		if(spiIn[1] != motor_reg_arr[i][1])
+			return 1;
+		bcm2835_delay(10);
+	}
+	return 0;
 }
 
 uint16_t motor_register_read(int reg){

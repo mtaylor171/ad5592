@@ -61,25 +61,34 @@ my_functions = CDLL(so_file)
 
 def initialize_spi():
     global initial_us
+	print("Initializing spi...")
     pi_pwm.start(0)
     GPIO.output(motor_en, 1)
-    print("Initializing spi...")
     if(my_functions.initialize_motor() == 0):
         print("Motor Initialize Successful!\n")
     else:
-        print("WARNING: Initialize Failed")
+        print("WARNING: Initialize Failed\n")
         sys.exit()
-    for i in range(0, 19):
-        reg_data = my_functions.motor_register_read(i)
-        print('Register {}:'.format(i) + ' {}'.format(hex(reg_data)));
-        print('\n')
-    reg_check = input("Are Registers correct? (y/n)")
+    print("Checking Registers...\n")        
+    if(my_functions.motor_initialize_check() == 0):
+    	print("Motor Registers Written Correctly!\n")
+    else:
+    	print("WARNING: Motor Registers Incorrect!\n")
+    	a = input("Type any letter to exit:")
+    	sys.exit()
+    reg_read_confirm = input("\nWould you like to view the registers? (y/n):")
+    if reg_read_confirm == 'y':
+    	for i in range(0, 19):
+    		reg_data = my_functions.motor_register_read(i)
+        	print('Register {}:'.format(i) + ' {}'.format(hex(reg_data)));
+        	print('\n')
+    reg_check = input("\nAre Registers correct? (y/n):")
     if(reg_check != 'y'):
         sys.exit()
     if(my_functions.initialize() == 0):
         print("ADC Initialize Successful!\n")
     else:
-        print("WARNING: Initialize Failed")
+        print("WARNING: Initialize Failed\n")
         sys.exit()  
 
 def get_us():
