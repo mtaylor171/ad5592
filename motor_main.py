@@ -55,13 +55,15 @@ dt = 0.5
 alpha = 0.01
 beta = .0001
 
-so_file = "/home/pi/Documents/motor_board/ad5592/ad5592_spi_read.so"
+so_file = "/home/pi/Documents/ad5592/ad5592_spi_read.so"
 
 my_functions = CDLL(so_file)
 
 def initialize_spi():
     global initial_us
+    pi_pwm.start(0)
     GPIO.output(motor_en, 1)
+    print("Initializing spi...")
     if(my_functions.initialize_motor() == 0):
         print("Motor Initialize Successful!\n")
     else:
@@ -121,7 +123,6 @@ def user_inputs():
     time.sleep(.1)
     pwm_target = input("Enter target duty cycle:")
     pwm_current = 0
-    pi_pwm.start(pwm_current)
     
 def pwm_control():
     global pwm_current

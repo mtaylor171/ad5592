@@ -55,7 +55,7 @@ dt = 0.5
 alpha = 0.01
 beta = .0001
 
-so_file = "/home/pi/Documents/motor_board/ad5592/ad5592_spi_read.so"
+so_file = "/home/pi/Documents/ad5592/ad5592_spi_read.so"
 
 my_functions = CDLL(so_file)
 
