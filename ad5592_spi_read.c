@@ -13,6 +13,41 @@
 #define SPI_WORD_BYTES				1U		/* Number of bytes in SPI word for device */
 
 /**
+ * DRV8343 Register commands
+ * Refer to datasheet
+ */
+#define DRV8343_1xPWM 	 		0x20		
+#define DRV8343_OLP5MS_SHORT2MS 0x40
+#define DRV8343_IDRIVE_735MA 	0xCC
+#define DRV8343_VDS_0V75 		0x99
+#define DRV8343_IC9_CONTROL  	0x2C
+#define DRV8343_IC10_CONTROL	0x61 
+#define DRV8343_IC11_CONTROL 	0x00 
+#define DRV8343_IC12_CONTROL 	0x2A 
+#define DRV8343_IC13_CONTROL	0x3F
+#define DRV8343_IC14_CONTROL 	0x00
+
+
+/**
+ * DRV8343 Registers
+ * Refer to datasheet
+ */
+#define DRV8343_IC1 	0x04
+#define DRV8343_IC2 	0x05
+#define DRV8343_IC3 	0x06 
+#define DRV8343_IC4 	0x07
+#define DRV8343_IC5 	0x08
+#define DRV8343_IC6 	0x09  
+#define DRV8343_IC7 	0x0A 
+#define DRV8343_IC8 	0x0B
+#define DRV8343_IC9 	0x0C 
+#define DRV8343_IC10	0x0D 
+#define DRV8343_IC11 	0x0E 
+#define DRV8343_IC12 	0x0F 
+#define DRV8343_IC13	0x10
+#define DRV8343_IC14 	0x11
+
+/**
  * Control register definitions.
  * Refer to page 26 of AD5592R datasheet Rev A.
  */
@@ -260,46 +295,52 @@ uint32_t elapsed_time(){
  */
 
 int initialize_motor(){
+	int temp_counter = 0;
 	AD5592_Init();
 	setAD5592Ch(1);
 	bcm2835_delay(1);
-	spiComs(0x0420);
+	spiComs((DRV8343_IC2 << 8) | DRV8343_1xPWM);
 	bcm2835_delay(1);
 	while(spiIn[1] != 0x20){
-		spiComs(0x0420);
+		spiComs((DRV8343_IC2 << 8) | DRV8343_1xPWM);  //Keeps trying to send first register command
+		bcm2835_delay(100); 
+		temp_counter ++;
+		if(temp_counter => 50){		//Try sending after 50ms increments
+			return 1;		//Timeout after 5 seconds of trying
+		}
 	}
 	bcm2835_delay(1);
-	spiComs(0x0420);
+	spiComs((DRV8343_IC2 << 8) | DRV8343_OLP5MS_SHORT2MS);
 	bcm2835_delay(1);
-	spiComs(0x0540);
+	spiComs((DRV8343_IC3 << 8) | DRV8343_IDRIVE_735MA);
 	bcm2835_delay(1);
-	spiComs(0x06cc);
+	spiComs((DRV8343_IC4 << 8) | DRV8343_IDRIVE_735MA);
 	bcm2835_delay(1);
-	spiComs(0x07cc);
+	spiComs((DRV8343_IC5 << 8) | DRV8343_IDRIVE_735MA);
 	bcm2835_delay(1);
-	spiComs(0x08cc);
+	spiComs((DRV8343_IC6 << 8) | DRV8343_VDS_0V75);
 	bcm2835_delay(1);
-	spiComs(0x0999);
+	spiComs((DRV8343_IC7 << 8) | DRV8343_VDS_0V75);
 	bcm2835_delay(1);
-	spiComs(0x0A99);
+	spiComs((DRV8343_IC8 << 8) | DRV8343_VDS_0V75);
 	bcm2835_delay(1);
-	spiComs(0x0B99);
+	spiComs((DRV8343_IC9 << 8) | DRV8343_IC9_CONTROL);
 	bcm2835_delay(1);
-	spiComs(0x0C2C);
+	spiComs((DRV8343_IC10 << 8) | DRV8343_IC10_CONTROL);
 	bcm2835_delay(1);
-	spiComs(0x0D61);
+	spiComs((DRV8343_IC11 << 8) | DRV8343_IC11_CONTROL);
 	bcm2835_delay(1);
-	spiComs(0x0E00);
+	spiComs((DRV8343_IC12 << 8) | DRV8343_IC12_CONTROL);  //Changed from 0x0F15
 	bcm2835_delay(1);
-	spiComs(0x0F15);
+	spiComs((DRV8343_IC13 << 8) | DRV8343_IC13_CONTROL);
 	bcm2835_delay(1);
-	spiComs(0x103F);
-	bcm2835_delay(1);
-	spiComs(0x1100);
-	bcm2835_delay(1);
-	spiComs(0x1200);
+	spiComs((DRV8343_IC14 << 8) | DRV8343_IC14_CONTROL);
 	bcm2835_delay(1);
 	return 0;
+}
+
+int motor_initialize_check(){
+
 }
 
 uint16_t motor_register_read(int reg){
