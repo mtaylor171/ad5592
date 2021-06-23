@@ -21,5 +21,5 @@ Alternatively, the Raspberry Pi that the test team will get has a desktop icon t
 
 The script has some user-defined fields that the testers will need to fill in:
 
-*Enter sample duration:* - for this please enter how many seconds you would like to run the motor. If you would like to run it infinitely, type 'i'
-*Enter target duty cycle:* - this is the duty cycle percentage that the PWM will be controlling the motor. This value can range from 0-100. We are hoping to add functionality to change the PWM mid-run in the future
+*'Enter sample duration:'* - for this please enter how many seconds you would like to run the motor. If you would like to run it infinitely, type 'i'
+*'Enter target duty cycle:'* - this is the duty cycle percentage that the PWM will be controlling the motor. This value can range from 0-100. We are hoping to add functionality to change the PWM mid-run in the future
