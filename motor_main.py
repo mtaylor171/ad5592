@@ -5,6 +5,7 @@ from numpy.ctypeslib import ndpointer
 import csv
 import matplotlib.pyplot as plt
 import datetime
+from datetime import timedelta
 import time
 import sys
 import random
@@ -59,8 +60,9 @@ so_file = "/home/pi/Documents/ad5592/ad5592_spi_read.so"
 
 my_functions = CDLL(so_file)
 
-def initialize_spi():
-    global initial_us
+# Initializes spi on both the motor controller and ADC
+# Writes register commands to both chips. These are designed in the C library
+def initialize():
 	print("Initializing spi...")
     pi_pwm.start(0)
     GPIO.output(motor_en, 1)
@@ -78,12 +80,8 @@ def initialize_spi():
     	sys.exit()
     reg_read_confirm = input("\nWould you like to view the registers? (y/n):")
     if reg_read_confirm == 'y':
-    	for i in range(0, 19):
-    		reg_data = my_functions.motor_register_read(i)
-        	print('Register {}:'.format(i) + ' {}'.format(hex(reg_data)));
-        	print('\n')
-    reg_check = input("\nAre Registers correct? (y/n):")
-    if(reg_check != 'y'):
+    	read_registers()
+    if(input("\nAre Registers correct? (y/n):") != 'y'):
         sys.exit()
     if(my_functions.initialize() == 0):
         print("ADC Initialize Successful!\n")
@@ -91,14 +89,25 @@ def initialize_spi():
         print("WARNING: Initialize Failed\n")
         sys.exit()  
 
+# Reads all registers on DRV8343 and prints them
+def read_registers():
+	for i in range(0, 19):
+		reg_data = my_functions.motor_register_read(i)
+		print('Register {}:'.format(i) + ' {}'.format(hex(reg_data)));
+		print('\n')
+
+# Gets the current time in the form of microseconds - need to revisit this
 def get_us():
     now = datetime.datetime.now()
     return (now.minute*60000000)+(now.second*1000000)+(now.microsecond)
-    
+
+# Returns the elapsed time by subtracting the timestamp provided by the current time 
 def get_elapsed_us(timestamp):
     temp = get_us()
     return (temp - timestamp)
 
+# Converts the hall sensor pulse data into a position (1-6)
+# If the hall sensor pulses do not align with one of these positions, a zero is returned at which there will a flag raised
 def find_position(code):
     if code == [1, 0, 1]:
         return 1
@@ -115,24 +124,29 @@ def find_position(code):
     else:
         return 0
 
-#def rising_edge_detect(data_new, data_old):
-
+# Processes the raw ADC data by multiplying by factor of 4096/5000 = 0.819
+# Also extracts the index from data frame
+# Returns both of these
 def data_process(data):
     adc_reading = int((data & 0x0FFF) / 0.819)
     index = ((data >> 12) & 0x7)
     return adc_reading, index
 
+# Collects all the user-defined inputs: duration + target duty cycle
 def user_inputs():
     global duration
     global pwm_current
     global pwm_target
-    duration = input("Enter sample duration (type 'r' for inifinite):")
+    duration = input("Enter sample duration (type 'i' for inifinite):")
     writer = csv.writer(file)
     writer.writerow(["Time (us)", "Signal 0", "Signal 1", "Signal 2", "Signal 3", "Signal 4", "Signal 5", "Signal 6", "Signal 7"])
     time.sleep(.1)
-    pwm_target = input("Enter target duty cycle:")
+    pwm_target = input("Enter target duty cycle % (0-100):")
     pwm_current = 0
-    
+
+
+# Increases PWM control duty cycle by 1%
+# Gets called by run_main until preferred duty cycle is reached
 def pwm_control():
     global pwm_current
     if(pwm_current < int(pwm_target)):
@@ -140,6 +154,7 @@ def pwm_control():
         print("PWM: {}".format(pwm_current))
     pi_pwm.ChangeDutyCycle(pwm_current)             #start PWM of required Duty Cycle
 
+# This occurs when either the user-defined time limit has elapsed or there is a keyboard interrupt
 def motor_rampdown():
     print("Starting rampdown...")
     for duty in range(pwm_current,-1,-1):
@@ -150,6 +165,8 @@ def motor_rampdown():
     graph_data()
     sys.exit()
 
+# This occurs when there is a danger event like a stall or overcurrent
+# In this case, we want to shut off everything immediately to prevent further damage
 def motor_shutdown():
     print("Starting shutdown...")
     pi_pwm.ChangeDutyCycle(0)
@@ -157,16 +174,21 @@ def motor_shutdown():
     graph_data()
     sys.exit()
 
+# Trying to get a relationship between frequency and the PWM signal for closed loop
+# More development on this to come
 def motor_reluctance(freq):
     temp_reluctance = freq/pwm_current
     return temp_reluctance
 
+#Calculates motor speed by seeing how long it took to change consecutive positions (6 position changes in 1 revolution)
 def get_rpm(position_hold_time):
     freq = (100000/((get_us() - position_hold_time)*6))
     freq_count[0].append(get_elapsed_us(initial_us))
     freq_count[1].append(freq)
     return freq
 
+# Runs all the health checks for motor
+# This includes stall protection, position data, and current data
 def health_check(temp_data):
     global last_position
     global position_hold_time
@@ -197,6 +219,7 @@ def health_check(temp_data):
             print("****WARNING: STALL DETECTED****")
             motor_shutdown()
 
+# Kalman filter for current (currently copied from frequency one - need to either delete or fix this)
 def running_filter(freq_data_current):
     global x
     global v
@@ -217,7 +240,7 @@ def running_filter(freq_data_current):
     v.append(v_k)
     r.append(r_k)
 
-
+# Kalman filter to smooth out frequency data 
 def running_filter_time(freq_data_current):
     global x
     global v
@@ -238,9 +261,12 @@ def running_filter_time(freq_data_current):
     v.append(v_k)
     r.append(r_k)       
 
+# Need to calculate RMS current from raw data here
 def revolution_rms():
     return 0
 
+
+# Graphs the current data. This is currently screwed up
 def graph_data():
     #filter_data(freq_count[1])
     axs[0].plot(freq_count[0], x)
@@ -249,7 +275,10 @@ def graph_data():
     axs[3].plot(data[0], data[6])
     plt.show()
 
-def read_adc():
+# This is the main script which commands the pwm, adc data, and 
+# The while loop will keep running until time elapses, a keyboard interrupt, or the motor stalls
+
+def run_main():
     global initial_us
     global position_hold_time
     global data
@@ -258,14 +287,14 @@ def read_adc():
     adc_reading = 0x0
     index = 0x0
     pwm_counter = 0
-    initial_us = get_us()
-    my_functions.getAnalogInAll_InitialSend()
-    position_hold_time = get_us()
+    initial_us = get_us()												# Gets initial timestamp for time recording
+    my_functions.getAnalogInAll_InitialSend()							# Sends initial command to ADC to start recording all channels repeatedly
+    position_hold_time = get_us()										# Gets initial timestamp for position time tracking
     while(1):
         try:
             if((pwm_counter % 1000) == 0):
-                pwm_control()
-            pwm_counter = pwm_counter + 1
+                pwm_control()											# Adjusts PWM for ramp-up
+            pwm_counter = pwm_counter + 1								# Counter allows for a gradual ramp-up
             for i in range(0, ACTIVE_CHANNELS):
                 data_16bit = my_functions.getAnalogInAll_Receive()
                 adc_reading, index = data_process(data_16bit)
@@ -286,6 +315,6 @@ def read_adc():
             motor_rampdown()
     
 if __name__ == "__main__":
-    initialize_spi()
+    initialize()
     user_inputs()
-    read_adc()
+    run_main()

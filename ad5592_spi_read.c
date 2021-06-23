@@ -239,6 +239,8 @@ void setAnalogOut(uint8_t pin, uint16_t milivolts);
  */
 uint16_t getAnalogIn(uint8_t pins);
 
+
+
 uint32_t elapsed_time();
 
 /**
@@ -249,10 +251,23 @@ uint32_t elapsed_time();
  */
 void AD5592_Init();
 
+/**
+* Send register commands to motor
+* These commands can be changed in definitions above
+*/
+
 int initialize_motor();
 
+/**
+* Checks if motor registers are written correctly
+*
+*/
 int motor_initialize_check();
 
+/**
+* Reads registers and returns value for user to debug and/or read faults
+*
+*/
 uint16_t motor_register_read();
 
 #endif /* SOURCES_AD5592RPI_H_ */
@@ -603,5 +618,5 @@ void AD5592_Init()
     bcm2835_spi_setDataMode(BCM2835_SPI_MODE1);                   // Mode 1
 
     /* Set SPI clock */
-    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128); 	  // 16 = 64ns = 15.625MHz
+    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128); 	  // 1.5GHz / 128 = 11.71MHz
 }
