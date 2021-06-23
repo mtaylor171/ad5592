@@ -16,10 +16,14 @@
  * DRV8343 Register commands
  * Refer to datasheet
  */
-#define DRV8343_1xPWM 	 		0x20		
-#define DRV8343_OLP5MS_SHORT2MS 0x40
-#define DRV8343_IDRIVE_735MA 	0xCC
-#define DRV8343_VDS_0V75 		0x99
+#define DRV8343_IC1_CONTROL		0x20		
+#define DRV8343_IC2_CONTROL 	0x40
+#define DRV8343_IC3_CONTROL 	0xCC
+#define DRV8343_IC4_CONTROL 	0xCC
+#define DRV8343_IC5_CONTROL 	0xCC
+#define DRV8343_IC6_CONTROL 	0x99
+#define DRV8343_IC7_CONTROL 	0x99
+#define DRV8343_IC8_CONTROL 	0x99
 #define DRV8343_IC9_CONTROL  	0x2C
 #define DRV8343_IC10_CONTROL	0x61 
 #define DRV8343_IC11_CONTROL 	0x00 
@@ -47,15 +51,15 @@
 #define DRV8343_IC13	0x10
 #define DRV8343_IC14 	0x11
 
-uint16_t motor_reg_arr[12][2] = {
-	{DRV8343_IC1, DRV8343_1xPWM},
-	{DRV8343_IC2, DRV8343_OLP5MS_SHORT2MS},
-	{DRV8343_IC3, DRV8343_IDRIVE_735MA},
-	{DRV8343_IC4, DRV8343_IDRIVE_735MA},
-	{DRV8343_IC5, DRV8343_IDRIVE_735MA},
-	{DRV8343_IC6, DRV8343_VDS_0V75},
-	{DRV8343_IC7, DRV8343_VDS_0V75},
-	{DRV8343_IC8, DRV8343_VDS_0V75},
+uint16_t motor_reg_arr[14][2] = {
+	{DRV8343_IC1, DRV8343_IC1_CONTROL},
+	{DRV8343_IC2, DRV8343_IC2_CONTROL},
+	{DRV8343_IC3, DRV8343_IC3_CONTROL},
+	{DRV8343_IC4, DRV8343_IC4_CONTROL},
+	{DRV8343_IC5, DRV8343_IC5_CONTROL},
+	{DRV8343_IC6, DRV8343_IC6_CONTROL},
+	{DRV8343_IC7, DRV8343_IC7_CONTROL},
+	{DRV8343_IC8, DRV8343_IC8_CONTROL},
 	{DRV8343_IC9, DRV8343_IC9_CONTROL},
 	{DRV8343_IC10, DRV8343_IC10_CONTROL},
 	{DRV8343_IC11, DRV8343_IC11_CONTROL},
@@ -318,13 +322,13 @@ int initialize_motor(){
 	AD5592_Init();
 	setAD5592Ch(1);
 	bcm2835_delay(10);
-	spiComs((DRV8343_IC1 << 8) | DRV8343_1xPWM);
+	spiComs((DRV8343_IC1 << 8) | DRV8343_IC1_CONTROL);
 	bcm2835_delay(10);
 	while(spiIn[1] != 0x20){
-		spiComs((DRV8343_IC1 << 8) | DRV8343_1xPWM);  //Keeps trying to send first register command, in 100ms increments
+		spiComs((DRV8343_IC1 << 8) | DRV8343_IC1_CONTROL);  //Keeps trying to send first register command, in 100ms increments
 		bcm2835_delay(100); 
 		temp_counter ++;
-		if(temp_counter => 50){
+		if(temp_counter >= 50){
 			return 1;		//Timeout after 5 seconds of trying
 		}
 	}
